@@ -1,0 +1,17 @@
+{
+  "name": "com.zjustan.scenenotes",
+  "version": "1.0.0",
+  "displayName": "Scene notes",
+  "description": "Add notes, drawings and icons without it being added in your scene",
+  "unity": "2019.1",
+  "unityRelease": "0b5",
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://example.com/licensing.html",
+  "keywords": [],
+  "author": {
+    "name": "Justin van diggelen",
+    "email": "justinvandiggelen@me.com",
+    "url": "https://www.unity3d.com"
+  }
+}
