@@ -1,13 +1,15 @@
+using System;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [EditorToolbarElement(id, typeof(SceneView))]
-class CreateNote : EditorToolbarToggle, IAccessContainerWindow
+class EditNoteToggle : EditorToolbarToggle, IAccessContainerWindow
 {
     // This ID is used to populate toolbar elements.
-    public const string id = "SceneNoteToolbar/Button";
+    public const string id = "SceneNoteToolbar/ToggleEdit";
 
     // IAccessContainerWindow provides a way for toolbar elements to access the `EditorWindow` in which they exist.
     // Here we use `containerWindow` to focus the camera on our newly instantiated objects after creation.
@@ -18,53 +20,56 @@ class CreateNote : EditorToolbarToggle, IAccessContainerWindow
     // a tooltip, icon, and action.
 
     private Material material { get; set; }
-    public CreateNote()
+    public EditNoteToggle()
     {
         // A toolbar element can be either text, icon, or a combination of the two. Keep in mind that if a toolbar is
         // docked horizontally the text will be clipped, so usually it's a good idea to specify an icon.
-        text = "Create new Note";
+        text = "Toggle edit notes";
         icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/CreateCubesIcon.png");
 
-        tooltip = "creates new note in scene";
-        SceneView.duringSceneGui -= SceneView_duringSceneGui;
-        SceneView.duringSceneGui += SceneView_duringSceneGui;
+        tooltip = "Toggle edit notes";
 
+        RegisterCallback<ChangeEvent<bool>>(Changed);
         material = new Material(Shader.Find("Standard"));
         material.mainTexture = AssetDatabase.LoadAssetAtPath<Texture>("Assets/Textures/ns-logo - Copy.png");
     }
+
+    private void Changed(ChangeEvent<bool> evt)
+    {
+        SceneNotes.Instance.IsEditing = evt.newValue;
+    }
+
     Vector3 Position;
     Vector3 Scale = Vector3.one;
     Quaternion quaternion = Quaternion.identity;
-    private void SceneView_duringSceneGui(SceneView obj)
+    
+}
+[EditorToolbarElement(id, typeof(SceneView))]
+class CreateNewNote : EditorToolbarDropdown
+{
+    public const string id = "SceneNoteToolbar/CreateNewNote";
+
+    public CreateNewNote()
     {
-        Graphics.DrawMesh(Resources.GetBuiltinResource<Mesh>("Plane.fbx"), Matrix4x4.TRS(Position, quaternion, Scale), material, 1, obj.camera);
-        if (!value)
+        text = "Create new note";
+        clicked += OnClick;        
+    }
+
+    private void OnClick()
+    {
+        var NewNote = new TextNote
         {
-            if (Handles.Button(Position, Quaternion.identity, .1f, .1f, Handles.DotHandleCap))
-            {
-                Debug.Log(Tools.current);
-            }
-
-
-            Handles.Label(Position, "test");
-            return;
-        }
-        Handles.color = Color.green;
-
-        if(Tools.current == Tool.Move)
-        Position = Handles.DoPositionHandle(Position, Quaternion.identity);
-        else if (Tools.current == Tool.Rotate)
-            quaternion = Handles.DoRotationHandle(quaternion, Position);
-        else if (Tools.current == Tool.Scale)
-            Scale = Handles.DoScaleHandle(Scale, Position, quaternion, 1f);
-
-
+            Position = Vector3.zero,
+            color = Color.red,
+            Text = text
+        };
+        SceneNotes.Instance.CreateNew(NewNote);
     }
 }
 
 
 // All Overlays must be tagged with the OverlayAttribute
-[Overlay(typeof(SceneView), "Placement Tools")]
+[Overlay(typeof(SceneView), "Scene notes",true)]
 // IconAttribute provides a way to define an icon for when an Overlay is in collapsed form. If not provided, the first
 // two letters of the Overlay name will be used.
 [Icon("Assets/PlacementToolsIcon.png")]
@@ -78,8 +83,12 @@ public class SceneNoteToolbar : ToolbarOverlay
     // This is the only code required to implement a toolbar overlay. Unlike panel overlays, the contents are defined
     // as standalone pieces that will be collected to form a strip of elements.
     SceneNoteToolbar() : base(
-        CreateNote.id)
+        EditNoteToggle.id,
+        CreateNewNote.id
+        )
     {
-
+        _ = SceneNotes.Instance;
     }
+
+
 }
